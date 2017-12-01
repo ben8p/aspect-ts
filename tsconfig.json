@@ -1,0 +1,25 @@
+{
+	"compilerOptions": {
+		"allowJs": true,
+		"downlevelIteration": true,
+		"forceConsistentCasingInFileNames": true,
+		"noImplicitAny": true,
+		"removeComments": false,
+		"preserveConstEnums": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"noImplicitReturns": true,
+		"noFallthroughCasesInSwitch": true,
+		"outDir": ".dist/",
+		"sourceMap": true,
+		"importHelpers": true,
+		"target": "ES5"
+	},
+	"include": [
+		"src/**/*.ts"
+	],
+	"exclude": [
+		"node_modules",
+		"**/*.spec.ts"
+	]
+}
