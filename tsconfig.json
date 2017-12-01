@@ -1,6 +1,5 @@
 {
 	"compilerOptions": {
-		"allowJs": true,
 		"downlevelIteration": true,
 		"forceConsistentCasingInFileNames": true,
 		"noImplicitAny": true,
@@ -10,7 +9,8 @@
 		"noUnusedParameters": true,
 		"noImplicitReturns": true,
 		"noFallthroughCasesInSwitch": true,
-		"outDir": ".dist/",
+		"declaration": true,
+		"outDir": "lib/",
 		"sourceMap": true,
 		"importHelpers": true,
 		"target": "ES5"

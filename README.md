@@ -8,7 +8,7 @@ A simple typescript Aspect implementation for AOP (Aspect Oriented Programming)
 
 For development two tasks are available:
   * __yarn test__ - Runs the tests
-  * __yarn build__ - Transpile the code into .dist directory
+  * __yarn build__ - Transpile the code into lib directory
 
 ## Usage
 The package exposes 5 methods :

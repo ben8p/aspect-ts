@@ -1,14 +1,25 @@
 {
-	"name": "aspect",
+	"name": "aspect-ts",
 	"version": "1.0.0",
 	"description": "aspect oriented programming for typescript and javascript",
-	"main": "src/aspect.ts",
+	"main": "./lib/aspect.js",
+	"types": "./lib/aspect.d.ts",
 	"author": "benjamin santalucia",
 	"license": "MIT",
 	"scripts": {
 		"build": "./node_modules/typescript/bin/tsc",
 		"test": "./node_modules/karma/bin/karma start"
 	},
+	"repository" : {
+		"type": "git",
+		"url": ""
+	},
+	"files": [
+		"./LICENSE.md",
+		"./README.md",
+		"./lib/",
+		"./src/"
+	],
 	"devDependencies": {
 		"@types/jasmine": "^2.8.2",
 		"istanbul": "^0.4.5",
