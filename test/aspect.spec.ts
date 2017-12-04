@@ -2,65 +2,88 @@ import { before, after, afterReturn, afterThrow, around } from '../src/aspect';
 
 describe('aspect', () => {
 	describe('before', () => {
+		it('should allow to run a method before another one on multiple contexts', () => {
+			const global: string[] = [];
+			const context1 = {
+				foo: () => {
+					global.push('foo1');
+				},
+			};
+			const context2 = {
+				foo: () => {
+					global.push('foo2');
+				},
+			};
+			before(context1, 'foo', () => {
+				global.push('before foo1');
+			});
+			before(context2, 'foo', () => {
+				global.push('before foo2');
+			});
+			expect(global).toEqual([]);
+			context1.foo();
+			expect(global).toEqual(['before foo1', 'foo1']);
+			global.length = 0;
+			expect(global).toEqual([]);
+			context2.foo();
+			expect(global).toEqual(['before foo2', 'foo2']);
+		});
+
 		it('should allow to run a method before another one', () => {
-			let global = '';
+			const global: string[] = [];
 			const context = {
 				foo: () => {
-					global += 'foo';
+					global.push('foo');
 				},
 			};
 			before(context, 'foo', () => {
-				global += 'before';
+				global.push('before');
 			});
 			context.foo();
-			expect(global).toBe('beforefoo');
+			expect(global).toEqual(['before', 'foo']);
 		});
 
 		it('should handle multiple advices', () => {
-			let global = '';
+			const global: string[] = [];
 			const context = {
 				foo: () => {
-					global += 'foo';
+					global.push('foo');
 				},
 			};
 			before(context, 'foo', () => {
-				global += 'before1';
+				global.push('before1');
 			});
 			before(context, 'foo', () => {
-				global += 'before2';
+				global.push('before2');
 			});
 			context.foo();
-			expect(global).toBe('before1before2foo');
+			expect(global).toEqual(['before1', 'before2', 'foo']);
 		});
 
 		it('should allow to remove advice', () => {
-			let global = '';
+			const global: string[] = [];
 			const context = {
 				foo: () => {
-					global += 'foo';
+					global.push('foo');
 				},
 			};
 			before(context, 'foo', () => {
-				global += 'before1';
+				global.push('before1');
 			});
 			const remove = before(context, 'foo', () => {
-				global += 'before2';
+				global.push('before2');
 			});
 			context.foo();
 			remove();
 			context.foo();
-			expect(global).toBe('before1before2foobefore1foo');
+			expect(global).toEqual(['before1', 'before2', 'foo', 'before1', 'foo']);
 		});
 
 		it('should not fail at removing 2 time the same advice', () => {
 			const context = {
-				foo: () => {
-					// nothing
-				},
+				foo: () => void(0),
 			};
-			const remove = before(context, 'foo', () => {
-				// nothing
-			});
+			const remove = before(context, 'foo', () => void(0));
 			remove();
 			expect(() => {
 				remove();
@@ -70,67 +93,65 @@ describe('aspect', () => {
 
 	describe('around', () => {
 		it('should allow to run a method around another one', () => {
-			let global = '';
+			const global: string[] = [];
 			const context = {
 				foo: () => {
-					global += 'foo';
+					global.push('foo');
 				},
 			};
 			around(context, 'foo', (advice) => {
-				global += 'around-before';
+				global.push('around1-before');
 				advice();
-				global += 'around-after';
+				global.push('around1-after');
 			});
 			around(context, 'foo', (advice) => {
-				global += 'around2-before';
+				global.push('around2-before');
 				advice();
-				global += 'around2-after';
+				global.push('around2-after');
 			});
-			const v = context.foo();
-			expect(global).toBe('around2-beforearound-beforefooaround-afteraround2-after');
+			context.foo();
+			expect(global).toEqual(['around2-before', 'around1-before', 'foo', 'around1-after', 'around2-after']);
 		});
 
 		it('should allow to run a method around another one and return correct values', () => {
 			const context = {
 				foo: () => {
-					return 'q';
+					return 'foo';
 				},
 			};
 			around(context, 'foo', (advice) => {
 				const around1 = advice();
-				return `w${around1}`;
+				return `around1-${around1}`;
 			});
 			around(context, 'foo', (advice) => {
 				const around2 = advice();
-				return `e${around2}`;
+				return `around2-${around2}`;
 			});
-			const v = context.foo();
-			expect(v).toBe('ewq');
+			const value = context.foo();
+			expect(value).toBe('around2-around1-foo');
 		});
 		it('should allow to run a method around another one and pass parameters', () => {
 			const context = {
-				foo: (value) => `4${value}`,
+				foo: (value) => `${value}4`,
 			};
-			around(context, 'foo', (value, advice) => advice(`3${value}`));
-			around(context, 'foo', (value, advice) => advice(`2${value}`));
-			const v = context.foo('1');
-			expect(v).toBe('4321');
+			around(context, 'foo', (value, advice) => advice(`${value}3`));
+			around(context, 'foo', (value, advice) => advice(`${value}2`));
+			const returnedValue = context.foo('1');
+			expect(returnedValue).toBe('1234');
 		});
-		it('should allow to remove and advice', () => {
+		it('should allow to remove an advice', () => {
 			const context = {
-				foo: (value) => `4${value}`,
+				foo: (value) => `${value}4`,
 			};
-			around(context, 'foo', (value, advice) => advice(`3${value}`));
-			const remove = around(context, 'foo', (value, advice) => advice(`2${value}`));
+			around(context, 'foo', (value, advice) => advice(`${value}3`));
+			const remove = around(context, 'foo', (value, advice) => advice(`${value}2`));
 			remove();
-			const v = context.foo('1');
-			expect(v).toBe('431');
+			const returnedValue = context.foo('1');
+			expect(returnedValue).toBe('134');
 		});
 		it('should not fail if trying to remove 2 times the same advice', () => {
 			const context = {
-				foo: () => {
-					// nothing
-				},
+				foo: () => void(0),
 			};
 			const remove = around(context, 'foo', (advice) => advice());
 			remove();
@@ -142,148 +163,149 @@ describe('aspect', () => {
 
 	describe('afterReturn', () => {
 		it('should allow to run a method after another one returns properly', () => {
-			let global = '';
+			const global: string[] = [];
 			const context = {
 				foo: () => {
-					global += 'foo';
+					global.push('foo');
 				},
 			};
 			afterReturn(context, 'foo', () => {
-				global += 'after';
+				global.push('afterReturn');
 			});
 			context.foo();
-			expect(global).toBe('fooafter');
+			expect(global).toEqual(['foo', 'afterReturn']);
 		});
 
 		it('should chain returned values', () => {
+			const global: string[] = [];
 			const context = {
-				foo: () => 'foo',
+				foo: (): string => '1',
 			};
 			let beenThere = false;
-			afterReturn(context, 'foo', (value: any) => `after1${value}`);
+			afterReturn(context, 'foo', (value: any) => `${value}2`);
 			afterReturn(context, 'foo', (value: any) => {
-				expect(value).toEqual('after1foo');
+				expect(value).toEqual('12');
 				beenThere = true;
 			});
-			afterReturn(context, 'foo', (value: any) => `after3${value}`);
-			const returnValue = context.foo();
-			expect(returnValue).toEqual('after3after1foo');
+			afterReturn(context, 'foo', (value: any) => `${value}3`);
+			const returnedValue = context.foo();
+			expect(returnedValue).toEqual('123');
 			expect(beenThere).toBe(true); // can't use done because the test continue after setting this to true
 		});
 
 		it('should not fire the advice if the method throw', () => {
-			let global = '';
+			const global: string[] = [];
 			const context = {
 				foo: () => {
 					throw new Error();
 				},
 			};
 			afterReturn(context, 'foo', () => {
-				global += 'after';
+				global.push('afterReturn');
 			});
 			try {
 				context.foo();
 			} catch (error) {
 				// nothing
 			}
-			expect(global).toBe('');
+			expect(global).toEqual([]);
 		});
 
 		it('should receive the method returned value as argument', () => {
-			let global = '';
+			const global: string[] = [];
 			const context = {
 				foo: () => {
-					global += 'foo';
+					global.push('foo');
 					return 'bar';
 				},
 			};
 			afterReturn(context, 'foo', (value: any) => {
-				global += 'after';
+				global.push('afterReturn');
 				expect(value).toBe('bar');
 			});
 			context.foo();
-			expect(global).toBe('fooafter');
+			expect(global).toEqual(['foo', 'afterReturn']);
 		});
 
 		it('should handle multiple advices', () => {
-			let global = '';
+			const global: string[] = [];
 			const context = {
 				foo: () => {
-					global += 'foo';
+					global.push('foo');
 				},
 			};
 			afterReturn(context, 'foo', () => {
-				global += 'after1';
+				global.push('afterReturn1');
 			});
 			afterReturn(context, 'foo', () => {
-				global += 'after2';
+				global.push('afterReturn2');
 			});
 			context.foo();
-			expect(global).toBe('fooafter1after2');
+			expect(global).toEqual(['foo', 'afterReturn1', 'afterReturn2']);
 		});
 
 		it('should allow to remove advice', () => {
-			let global = '';
+			const global: string[] = [];
 			const context = {
 				foo: () => {
-					global += 'foo';
+					global.push('foo');
 				},
 			};
 			afterReturn(context, 'foo', () => {
-				global += 'after1';
+				global.push('afterReturn1');
 			});
 			const remove = afterReturn(context, 'foo', () => {
-				global += 'after2';
+				global.push('afterReturn2');
 			});
 			context.foo();
 			remove();
 			context.foo();
-			expect(global).toBe('fooafter1after2fooafter1');
+			expect(global).toEqual(['foo', 'afterReturn1', 'afterReturn2', 'foo', 'afterReturn1']);
 		});
 	});
 
 	describe('afterThrow', () => {
 		it('should not fire advice the method returns properly', () => {
-			let global = '';
+			const global: string[] = [];
 			const context = {
 				foo: () => {
-					global += 'foo';
+					global.push('foo');
 				},
 			};
 			afterThrow(context, 'foo', () => {
-				global += 'after';
+				global.push('afterThrow');
 			});
 			context.foo();
-			expect(global).toBe('foo');
+			expect(global).toEqual(['foo']);
 		});
 
 		it('should fire the advice if the method throw', () => {
-			let global = '';
+			const global: string[] = [];
 			const context = {
 				foo: () => {
 					throw new Error();
 				},
 			};
 			afterThrow(context, 'foo', () => {
-				global += 'after';
+				global.push('afterThrow');
 			});
 			try {
 				context.foo();
 			} catch (error) {
 				// nothing
 			}
-			expect(global).toBe('after');
+			expect(global).toEqual(['afterThrow']);
 		});
 
 		it('should receive the error as argument', () => {
-			let global = '';
+			const global: string[] = [];
 			const context = {
 				foo: () => {
 					throw new Error();
 				},
 			};
 			afterThrow(context, 'foo', (value: any) => {
-				global += 'after';
+				global.push('afterThrow');
 				expect(value instanceof Error).toBe(true);
 			});
 			try {
@@ -291,42 +313,42 @@ describe('aspect', () => {
 			} catch (error) {
 				// nothing
 			}
-			expect(global).toBe('after');
+			expect(global).toEqual(['afterThrow']);
 		});
 
 		it('should handle multiple advices', () => {
-			let global = '';
+			const global: string[] = [];
 			const context = {
 				foo: () => {
 					throw new Error();
 				},
 			};
 			afterThrow(context, 'foo', () => {
-				global += 'after1';
+				global.push('afterThrow1');
 			});
 			afterThrow(context, 'foo', () => {
-				global += 'after2';
+				global.push('afterThrow2');
 			});
 			try {
 				context.foo();
 			} catch (error) {
 				// nothing
 			}
-			expect(global).toBe('after1after2');
+			expect(global).toEqual(['afterThrow1', 'afterThrow2']);
 		});
 
 		it('should allow to remove advice', () => {
-			let global = '';
+			const global: string[] = [];
 			const context = {
 				foo: () => {
 					throw new Error();
 				},
 			};
 			afterThrow(context, 'foo', () => {
-				global += 'after1';
+				global.push('afterThrow1');
 			});
 			const remove = afterThrow(context, 'foo', () => {
-				global += 'after2';
+				global.push('afterThrow2');
 			});
 			try {
 				context.foo();
@@ -339,77 +361,77 @@ describe('aspect', () => {
 			} catch (error) {
 				// nothing
 			}
-			expect(global).toBe('after1after2after1');
+			expect(global).toEqual(['afterThrow1', 'afterThrow2', 'afterThrow1']);
 		});
 	});
 
 	describe('after', () => {
 		it('should fire advice the method returns properly', () => {
-			let global = '';
+			const global: string[] = [];
 			const context = {
 				foo: () => {
-					global += 'foo';
+					global.push('foo');
 				},
 			};
 			after(context, 'foo', () => {
-				global += 'after';
+				global.push('after');
 			});
 			context.foo();
-			expect(global).toBe('fooafter');
+			expect(global).toEqual(['foo', 'after']);
 		});
 
 		it('should fire the advice if the method throw', () => {
-			let global = '';
+			const global: string[] = [];
 			const context = {
 				foo: () => {
 					throw new Error();
 				},
 			};
 			after(context, 'foo', () => {
-				global += 'after';
+				global.push('after');
 			});
 			try {
 				context.foo();
 			} catch (error) {
 				// nothing
 			}
-			expect(global).toBe('after');
+			expect(global).toEqual(['after']);
 		});
 
 		it('should handle multiple advices', () => {
-			let global = '';
+			const global: string[] = [];
 			const context = {
 				foo: () => {
-					global += 'foo';
+					global.push('foo');
 				},
 			};
 			after(context, 'foo', () => {
-				global += 'after1';
+				global.push('after1');
 			});
 			after(context, 'foo', () => {
-				global += 'after2';
+				global.push('after2');
 			});
 			context.foo();
-			expect(global).toBe('fooafter1after2');
+			expect(global).toEqual(['foo', 'after1', 'after2']);
 		});
 
 		it('should allow to remove advice', () => {
-			let global = '';
+			const global: string[] = [];
 			const context = {
 				foo: () => {
-					global += 'foo';
+					global.push('foo');
 				},
 			};
 			after(context, 'foo', () => {
-				global += 'after1';
+				global.push('after1');
 			});
 			const remove = after(context, 'foo', () => {
-				global += 'after2';
+				global.push('after2');
 			});
 			context.foo();
 			remove();
 			context.foo();
-			expect(global).toBe('fooafter1after2fooafter1');
+			expect(global).toEqual(['foo', 'after1', 'after2', 'foo', 'after1']);
 		});
 	});
 });
