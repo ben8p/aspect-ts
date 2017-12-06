@@ -1,6 +1,6 @@
 {
 	"name": "aspect-ts",
-	"version": "1.0.1",
+	"version": "1.0.6",
 	"description": "aspect oriented programming for typescript and javascript",
 	"main": "./lib/aspect.js",
 	"types": "./lib/aspect.d.ts",
@@ -15,10 +15,11 @@
 		"url": "https://github.com/ben8p/aspect-ts"
 	},
 	"files": [
-		"./LICENSE.md",
-		"./README.md",
-		"./lib/",
-		"./src/"
+		"LICENSE.md",
+		"README.md",
+		"package.json",
+		"lib",
+		"src"
 	],
 	"devDependencies": {
 		"@types/jasmine": "^2.8.2",
